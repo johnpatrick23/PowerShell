@@ -29,6 +29,7 @@ $UserInfos | ForEach-Object -Process {
         $groupCode = $_.groupCode
         
         Start-Job -ScriptBlock { 
+
             function Generate-FileName{
                 param($Prefix, $GroupCode, $username)
 
@@ -46,6 +47,7 @@ $UserInfos | ForEach-Object -Process {
     
                 return "$Prefix-$GroupCode-$username-$Year$MonthString$Day$Hour$Minute$Second$MilliSec"
             }
+
             # Adding zero to have a 2 digit number
             function Add-Zero{
                 param($Number)
@@ -58,12 +60,19 @@ $UserInfos | ForEach-Object -Process {
             }
             
             $resourceGroupName = Generate-FileName -Prefix "AS" -GroupCode $args[2] -username $args[0]
+
             if([bool](New-AzureRmResourceGroup -Name $resourceGroupName -Location "southeastasia")){
-                New-AzureRmRoleAssignment -ResourceGroupName $resourceGroupName -SignInName $args[1] -RoleDefinitionName Owner | Out-Null
+                New-AzureRmRoleAssignment `
+                    -ResourceGroupName $resourceGroupName `
+                    -SignInName $args[1] `
+                    -RoleDefinitionName Owner | Out-Null
                 $resourceGroupName
             }
+
         } -ArgumentList $user, $email, $groupCode;
-        Start-Sleep -s 5 # Azure gets very upset if you slam too much work at it and randomly decides not to accept the request therefore you need to put a delay with at least 5 seconds
+        Start-Sleep -s 5 
+        # Azure gets very upset if you slam too much work at it and randomly decides not to accept the request.
+        # Therefore you need to put a delay with at least 5 seconds.
 }
 Get-Job | Wait-Job | Receive-Job
 
